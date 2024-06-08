@@ -44,14 +44,16 @@ public class JapCross {
 
     public void iterateLineLook() {
         boolean findedCellsState;
+        int iteration = 1;
         do {
             findedCellsState = false;
             for (int i = 0; i < rowAmount; i++) {
                 if (needRefreshRow[i])
                     findedCellsState = analyzeLine(true, i) || findedCellsState;
             }
-            System.out.println("row search");
+
             if (findedCellsState) {
+                System.out.println("row search iteration = " + iteration);
                 printSolution();
                 clearColorInfo();
             }
@@ -64,6 +66,7 @@ public class JapCross {
                 printSolution();
                 clearColorInfo();
             }
+            iteration++;
         } while (findedCellsState);
     }
 
@@ -92,10 +95,10 @@ public class JapCross {
                     }
                 }
                 if (gameField[i][j] == 1)
-                    System.out.print("\u2588");
+                    System.out.print("\u2588\u258a");
                 else if (gameField[i][j] == 2)
-                    System.out.print("\u2591");
-                else System.out.print("\u25ab");
+                    System.out.print("\u2591\u2591");
+                else System.out.print("\u2595\u258f");
             }
             System.out.println(ANSI_RESET);
         }

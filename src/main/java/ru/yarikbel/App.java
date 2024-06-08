@@ -9,26 +9,34 @@ import java.util.*;
  */
 public class App {
     public static void main(String[] args) {
-//        System.out.println("\u001B[35mHello \u001B[34mWorld\u001B[43m!\u001B[0m");
 
         JapCross cross;
         List<List<Integer>> columnBlocksList = new ArrayList<>();
         List<List<Integer>> rowBlocksList = new ArrayList<>();
 
-        if (args.length > 0 && !args[0].isBlank()) {
-            List<String> allLineFromFile = readCrossDataFileToStrngList(args[0]);
-            getCrossColAndRowBlockData(allLineFromFile, columnBlocksList, rowBlocksList);
+        if (args.length == 0 || args[0].isBlank()) {
+            printHelp();
+            return;
         }
+
+        List<String> allLineFromFile = readCrossDataFileToStrngList(args[0]);
+        getCrossColAndRowBlockData(allLineFromFile, columnBlocksList, rowBlocksList);
+
         cross = new JapCross(columnBlocksList, rowBlocksList);
+/*
         OptionalInt maxCol = columnBlocksList.stream().mapToInt(List::size).max();
         OptionalInt maxRow = rowBlocksList.stream().mapToInt(List::size).max();
-//        System.out.println(maxCol.getAsInt() + " " + maxRow.getAsInt());
-//        System.out.println("###");
-//        columnBlocksList.forEach(System.out::println);
-//        System.out.println("###");
-//        rowBlocksList.forEach(System.out::println);
+*/
         cross.run();
 //        cross.printSolution();
+    }
+
+    private static void printHelp() {
+        System.out.println("Отсутствует обязательный параметр запуска - имя файла с данными кроссворда.");
+        System.out.println("Файл должен содержать в первой строке целое число N - количество строк кроссворда");
+        System.out.println("Последующие N строк количества непрерывно закрашенных блоков в очередной строке, разделенные пробелом");
+        System.out.println("В строке N+2 - целое число M - количество столбцов в кроссворде ");
+        System.out.println("Последующие M строк количества непрерывно закрашенных блоков в очередном столбце, разделенные пробелом");
     }
 
     private static void getCrossColAndRowBlockData(List<String> lines,
