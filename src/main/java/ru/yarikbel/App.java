@@ -21,14 +21,29 @@ public class App {
 
         List<String> allLineFromFile = readCrossDataFileToStrngList(args[0]);
         getCrossColAndRowBlockData(allLineFromFile, columnBlocksList, rowBlocksList);
+        if (!checkColoredCellsSum(columnBlocksList, rowBlocksList)) {
+            throw new RuntimeException("Wrong file data: Сумма закрашенных ячеек по столбцам не равна сумме сумме закрашенных ячеек по строкам");
+        }
 
         cross = new JapCross(columnBlocksList, rowBlocksList);
 /*
         OptionalInt maxCol = columnBlocksList.stream().mapToInt(List::size).max();
         OptionalInt maxRow = rowBlocksList.stream().mapToInt(List::size).max();
 */
-        cross.run();
+        cross.run(0, 0);
 //        cross.printSolution();
+    }
+
+    private static boolean checkColoredCellsSum(List<List<Integer>> columnBlocksList, List<List<Integer>> rowBlocksList) {
+        int coloredCellsFromCol = columnBlocksList.stream()
+                .flatMap(Collection::stream)
+                .mapToInt(Integer::intValue)
+                .sum();
+        int coloredCellsFromRow = rowBlocksList.stream()
+                .flatMap(Collection::stream)
+                .mapToInt(Integer::intValue)
+                .sum();
+        return coloredCellsFromCol == coloredCellsFromRow;
     }
 
     private static void printHelp() {

@@ -12,7 +12,7 @@ public class JapCross {
     public static final String ANSI_RED = "\u001B[31m";
 
     // текущему состоянию клеток: 0 -- пока что неизвестно, 1 -- зарисованная, 2 -- гарантированно не зарисованная,
-    private final byte[][] gameField;
+    private byte[][] gameField;
     private final byte[][] gameFieldColor;
     private final int rowAmount;
     private final int columnAmount;
@@ -42,6 +42,38 @@ public class JapCross {
         this.canBeEmpty = new boolean[max(columnAmount, rowAmount)];
     }
 
+    public void run(int x, int y) {
+        errorLevel = 0;
+        iterateLineLook();
+        if (errorLevel != 0) return;
+        int j = y;
+        int i = x;
+        while (j < rowAmount && gameField[j][i] > 0) { // ищем не осталось ли пустых ячеек
+            i++;
+            if (i == columnAmount) {
+                i = 0;
+                j++;
+            }
+        }
+        if (j == rowAmount) { // пустых ячеек не осталось, значит нашли решение и его выводим
+            System.out.println("====== Найдено решение ======");
+            printSolution();
+        } else { // нашли пустую ячейку
+            byte[][] copy = Arrays.stream(gameField).map(byte[]::clone).toArray(byte[][]::new); // создаем копию массива с решениями для восстановления в случае неверной гипотезы
+            gameField[j][i] = 1; // делаем предположение, что ячейка закрашена
+            needRefreshCol[i] = true;
+            needRefreshRow[j] = true;
+            run(i, j);
+            if (errorLevel != 0) {
+                gameField = copy; // восстанавливаем из копии массив с решением
+                gameField[j][i] = 2; // делаем предположение, что ячейка не закрашена
+                needRefreshCol[i] = true;
+                needRefreshRow[j] = true;
+                run(i, j);
+            }
+        }
+    }
+
     public void iterateLineLook() {
         boolean findedCellsState;
         int iteration = 1;
@@ -53,32 +85,17 @@ public class JapCross {
             }
 
             if (findedCellsState) {
-                System.out.println("row search iteration = " + iteration);
-                printSolution();
-                clearColorInfo();
+                printInterimSolution(iteration, "row");
             }
 
             for (int i = 0; i < columnAmount; i++) {
                 if (needRefreshCol[i]) findedCellsState = analyzeLine(false, i) || findedCellsState;
             }
             if (findedCellsState) {
-                System.out.println("column search");
-                printSolution();
-                clearColorInfo();
+                printInterimSolution(iteration, "column");
             }
             iteration++;
         } while (findedCellsState);
-    }
-
-    private void clearColorInfo() {
-        for (int i = 0; i < rowAmount; i++) {
-            Arrays.fill(gameFieldColor[i], (byte) 0);
-        }
-    }
-
-    public void run() {
-        errorLevel = 0;
-        iterateLineLook();
     }
 
     public void printSolution() {
@@ -105,6 +122,18 @@ public class JapCross {
         System.out.println("=============");
     }
 
+    private void printInterimSolution(int iteration, String mode) {
+        System.out.println(mode + " search iteration = " + iteration);
+        printSolution();
+        clearColorInfo();
+    }
+
+    private void clearColorInfo() {
+        for (int i = 0; i < rowAmount; i++) {
+            Arrays.fill(gameFieldColor[i], (byte) 0);
+        }
+    }
+
     private boolean tryBlock(int blockNumber,
                              int blockStartIndex,
                              byte[] cells,
@@ -115,7 +144,7 @@ public class JapCross {
         int blockLen = blockNumber == -1 ? 0 : blocksLen.get(blockNumber);
         boolean result;
         // проверяем все клеточки блока, если хоть одна из них гарантированно не зарисованная, то размещение блока в этой позиции не возможно
-        if (blockNumber > -1) {
+        if (blockNumber > -1) { // пропускаем "виртуальный" левый блок
             for (int i = blockStartIndex; i < blockStartIndex + blockLen; i++) {
                 if (cells[i] == 2) {
                     return false;
@@ -131,11 +160,10 @@ public class JapCross {
 //                 nextBlockStartIndex <= cells.length - blocksLen.get(blockNumber + 1) + 1;
                  nextBlockStartIndex++) {
                 if (nextBlockStartIndex > 0 && cells[nextBlockStartIndex - 1] == 1) { // возможно нужно добавить вначале условие "blockNumber > -1 &&"
-                    break;
+                    break;  // если предыдущий началу блок закрашен, то противоречивое расположение блока - выходим из метода
                 }
                 if (tryBlock(blockNumber + 1, nextBlockStartIndex, cells, blocksLen, canBeFilled, canBeEmpty)) {
-                    result = true;
-                    //(*какое-то непротиворечивое размещение дальнейших блоков существует*)
+                    result = true; //(*какое-то непротиворечивое размещение дальнейших блоков существует*)
                     for (int i = blockStartIndex; i < blockStartIndex + blockLen; i++) {
                         canBeFilled[i] = true; // помечаем предполагаемые занятые блоком клетки
                     }
@@ -174,6 +202,11 @@ public class JapCross {
         return sum + spaces - 1;
     }
 
+    /**
+     * @param isAnalyzeRow - true for analyze row and false for column
+     * @param lineNumber   - number of row or column
+     * @return - true if colored or empty cells were found during the analysis of the line
+     */
     private boolean analyzeLine(boolean isAnalyzeRow, int lineNumber) {
         boolean result = false;
         byte[] cells;
